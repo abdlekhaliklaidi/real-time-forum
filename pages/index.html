@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Reddit+Sans:ital,wght@0,200..900;1,200..900&display=swap"
+    rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forum</title>
+  <link rel="icon" type="image/x-icon" href="/static/forum_icon.png">
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+  <section>
+    <header class="header">
+      <div class="header-content">
+        <a href="#" class="logo">FORUM</a>
+        <div class="auth-icon">
+          <button id="logoutButton" style="display: none">🚪 Logout</button>
+          <button id="loginToggle" style="display: inline-block">
+            🔑 Login
+          </button>
+        </div>
+      </div>
+    </header>
+  </section>
+  <section>
+    <main class="main-content">
+
+      <!-- Login/Registration Popup -->
+      <div class="auth-popup" id="authPopup">
+        <div class="auth-container">
+          <button class="close-popup" id="closePopup">&times;</button>
+
+          <div class="auth-tabs">
+            <button class="active" data-form="login">Login</button>
+            <button data-form="register">Register</button>
+          </div>
+
+          <form id="loginForm" class="auth-form active">
+            <div class="form-group">
+              <label for="loginEmail">Email</label>
+              <input type="email" id="loginEmail" name="email" required />
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" name="password" required />
+            </div>
+            <button type="submit">Login</button>
+          </form>
+          <div id="loginMessage" style="display: none; color: red"></div>
+          <!-- ****** -->
+
+          <!-- ******************************************************** -->
+          <form id="registerForm" class="auth-form">
+            <div class="form-group">
+              <label for="registerUsername">Username</label>
+              <input type="text" id="registerUsername" name="username" required />
+              <small style="color: red; display: none"></small>
+            </div>
+            <div class="form-group">
+              <label for="registerEmail">Email</label>
+              <input type="email" id="registerEmail" name="email" required />
+              <small style="color: red; display: none"></small>
+            </div>
+            <div class="form-group">
+              <label for="registerPassword">Password</label>
+              <input type="password" id="registerPassword" name="password" required />
+              <small style="color: red; display: none"></small>
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirm Password</label>
+              <input type="password" id="confirmPassword" required />
+              <small id="passwordError" style="color: red; display: none">Passwords do not match.</small>
+            </div>
+            <button type="submit">Register</button>
+          </form>
+          <!-- ****** -->
+        </div>
+      </div>
+      <div class="container">
+        <form class="post-form" id="postForm" style="display: none">
+          <h2>Create New Post</h2>
+          <div class="form-group">
+            <label for="postTitle">Title</label>
+            <input type="text" id="postTitle" name="title" required />
+          </div>
+          <div class="form-group">
+            <label for="postContent">Content</label>
+            <textarea id="postContent" name="content" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Categories:</label>
+            <div class="category-checkboxes">
+            </div>
+          </div>
+          <button type="submit">Create Post</button>
+        </form>
+        <!-- Categories -->
+        <div class="filter-container">
+          <label for="categoryFilter">Filter by Category:</label>
+          <select id="categoryFilter">
+            <option value="all">All Posts</option>
+          </select>
+        </div>
+
+        <!-- Posts -->
+        <div class="filter-container" id="ownershipFilterContainer">
+          <label for="ownershipFilter">Filter by Posts:</label>
+          <select id="ownershipFilter">
+            <option value="all">All Posts</option>
+            <option value="my_posts">My Posts</option>
+            <option value="liked_posts">Liked Posts</option>
+          </select>
+        </div>
+
+        <div id="allPosts"></div>
+        <button id="loadMoreBtn" style="display: none">Load More</button>
+
+        <noscript>
+          <div class="noscript-message">
+            <p>
+              JavaScript is disabled in your browser. Please enable JavaScript
+              to view the posts.
+            </p>
+          </div>
+        </noscript>
+      </div>
+    </main>
+  </section>
+
+  <div class="receiver-container" >
+    <label for="receiverSelect">Choose a recipient:</label>
+    <select id="receiverSelect">
+
+    </select>
+    <!-- <button id="sendMessageBtn">Send Message</button> -->
+  </div>
+
+  <div class="content">
+    <input  type="text" id="input">
+    <button onclick="send()">send Message</button>
+  </div>
+
+  <!--PRINT YOU MESSAGE-->
+  <pre id="output"></pre>
+
+  <!-- footer -->
+  <footer class="footer">
+    <div class="footer-bottom">
+      <p>&copy; 2025 FORUM. All rights reserved.</p>
+    </div>
+  </footer>
+  <!-- footer -->
+
+  <script src="/static/guest.js"></script>
+  <script src="/static/auth.js"></script>
+  <script src="/static/comments.js"></script>
+  <script src="/static/interactions.js"></script>
+  <script src="/static/posts.js"></script>
+  <script src="/static/categories.js"></script>
+</body>
+
+<script>
+  // var input = document.getElementById('input')
+  // var output = document.getElementById('output')
+  // var socket = new WebSocket("ws://localhost:4848/Connections")
+
+  // output.classList.add("new-class")
+  // socket.onopen = function(){
+  //   output.innerHTML += "Status : You CONNECTED\n"
+  // }
+
+  // socket.onmessage = function(e){
+  //   console.log(e);
+
+  //   output.innerHTML += "Message : " + e.data + "\n"
+  // }
+  // function send() {
+  //     if (input.value.trim()) {
+  //       socket.send(input.value);
+  //       input.value = ""; 
+  //     }
+  //   }
+
+  var input = document.getElementById('input');
+  var output = document.getElementById('output');
+  var socket = new WebSocket("ws://localhost:4848/Connections");
+  var receiverSelect = document.getElementById('receiverSelect');
+  var sendMessageBtn = document.getElementById('sendMessageBtn');
+  var receiverContainer = document.querySelector('.receiver-container');
+
+
+  output.classList.add("new-class");
+
+  socket.onopen = function () {
+    output.innerHTML += "Status: You are connected\n";
+
+
+    socket.send(JSON.stringify({ type: 'get_receivers' }));
+  };
+
+  socket.onmessage = function (e) {
+    const message = JSON.parse(e.data);
+    console.log(message);
+
+
+    if (message.type === 'receivers') {
+
+      receiverSelect.innerHTML = '';
+
+      message.receivers.forEach(function (receiver) {
+        let option = document.createElement('option');
+        option.value = receiver.id;
+        option.textContent = receiver.username;
+        receiverSelect.appendChild(option);
+      });
+
+
+      receiverContainer.style.display = 'block';
+    } else if (message.type === 'message') {
+      output.innerHTML += "Message: " + message.content + "\n";
+    }
+  };
+
+
+  document.getElementById('sendMessageBtn').onclick = function () {
+    var selectedReceiver = receiverSelect.value;
+    var messageContent = document.getElementById('input').value;
+
+    if (selectedReceiver && messageContent.trim()) {
+
+      socket.send(JSON.stringify({
+        type: 'send_message',
+        receiverID: selectedReceiver,
+        content: messageContent
+      }));
+
+
+      document.getElementById('input').value = '';
+    } else {
+      alert("Please select a recipient and type a message.");
+    }
+  };
+
+
+  function send() {
+    var selectedReceiver = receiverSelect.value;
+    if (selectedReceiver && input.value.trim()) {
+      socket.send(JSON.stringify({
+        type: 'send_message',
+        receiverID: selectedReceiver,
+        content: input.value
+      }));
+
+      input.value = "";
+    }
+  }
+
+
+
+</script>
+
+</html>
