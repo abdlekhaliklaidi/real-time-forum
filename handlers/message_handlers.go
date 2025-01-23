@@ -39,7 +39,7 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	defer conn.Close()
+	// defer conn.Close()
 
 	var userID string
 	// _, p, err := conn.ReadMessage()
@@ -55,7 +55,7 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// userID = "7"
-	log.Println("Adding client", userID)
+	// log.Println("Adding client", userID)
 	clients[userID] = conn
 
 	receivers, err := GetReceivers()
@@ -71,6 +71,18 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 	err = conn.WriteJSON(response)
 	if err != nil {
 		log.Println("Error sending receivers:", err)
+	}
+
+	messages, err := GetMessages(userID)
+	if err != nil {
+		log.Println("Error retrieving messages:", err)
+	}
+
+	for _, msg := range messages {
+		err := conn.WriteJSON(msg)
+		if err != nil {
+			log.Println("Error sending message:", err)
+		}
 	}
 
 	for {
@@ -126,7 +138,7 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					log.Println("Error sending error to sender:", err)
 				}
-				return
+				continue
 			}
 
 			err := SendMessage(userID, receiverID, content)
@@ -161,6 +173,49 @@ func GetReceivers() ([]Receiver, error) {
 	}
 
 	return receivers, nil
+}
+
+func GetMessages(userID string) ([]Message, error) {
+	DB, err := sql.Open("sqlite3", "forum.db")
+	if err != nil {
+		log.Printf("Error opening database: %v", err)
+		return nil, err
+	}
+	defer DB.Close()
+
+	rows, err := DB.Query(`
+		SELECT sender_id, receiver_id, content 
+		FROM messages 
+		WHERE sender_id = ? OR receiver_id = ?`, userID, userID)
+	if err != nil {
+		log.Printf("Error querying messages: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var messages []Message
+	for rows.Next() {
+		var message Message
+		var senderID, receiverID, content string
+		err := rows.Scan(&senderID, &receiverID, &content)
+		if err != nil {
+			log.Printf("Error scanning message: %v", err)
+			return nil, err
+		}
+
+		if senderID == userID {
+			message.Type = "send_message"
+			message.ReceiverID = receiverID
+		} else {
+			message.Type = "receive_message"
+			message.ReceiverID = senderID
+		}
+		message.Content = content
+
+		messages = append(messages, message)
+	}
+
+	return messages, nil
 }
 
 func SendMessage(senderID string, receiverID string, content string) error {
