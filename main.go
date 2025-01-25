@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
+	"time"
 
 	"forum/auth"
 	"forum/database"
 	"forum/handlers"
-
-	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
+// var upgrader = websocket.Upgrader{
+// 	CheckOrigin: func(r *http.Request) bool {
+// 		return true
+// 	},
+// }
 
 func main() {
 	if err := database.InitDB(); err != nil {
@@ -46,4 +46,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	time.Sleep(10 * time.Second)
 }
