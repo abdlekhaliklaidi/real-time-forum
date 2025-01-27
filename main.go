@@ -12,11 +12,6 @@ import (
 	"forum/handlers"
 )
 
-// var upgrader = websocket.Upgrader{
-// 	CheckOrigin: func(r *http.Request) bool {
-// 		return true
-// 	},
-// }
 
 func main() {
 	if err := database.InitDB(); err != nil {

@@ -28,6 +28,12 @@ type Receiver struct {
 	Username string `json:"username"`
 }
 
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
 // var stopChan = make(chan bool)
 
 // WaitGroup//goroutines
@@ -62,11 +68,6 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 
 	// userID = "7"
 	// log.Println("Adding client", userID)
-	// if existingConn, exists := clients[userID]; exists {
-	// 	log.Println("Closing existing connection for user:", userID)
-	// 	existingConn.Close()
-	// 	delete(clients, userID)
-	// }
 
 	clients[userID] = conn
 
@@ -103,19 +104,7 @@ func handleMessages(conn *websocket.Conn, userID string) {
 			delete(clients, userID)
 			break
 		}
-		// _, messageData, err := conn.ReadMessage()
-		// if err != nil {
-		// 	log.Println(err)
-		// 	delete(clients, userID)
-		// 	break
-		// }
-		// // go func() {
-		// var message Message
-		// err = json.Unmarshal(messageData, &message)
-		// if err != nil {
-		// 	log.Println("Error unmarshalling message:", err)
-		// 	continue
-		// }
+
 		/////
 		if message.Type == "select_receiver" {
 			receiverID := message.ReceiverID
@@ -135,6 +124,7 @@ func handleMessages(conn *websocket.Conn, userID string) {
 			continue
 		}
 		//////
+
 		switch message.Type {
 		case "send_message":
 			receiverID := message.ReceiverID
@@ -149,17 +139,11 @@ func handleMessages(conn *websocket.Conn, userID string) {
 				if err != nil {
 					log.Println("Error sending error to sender:", err)
 				}
-				return
+				continue
 			}
 
-			resp := map[string]interface{}{
-				"type":    "message",
-				"content": content,
-			}
-
-			// receiverConn, exists := clients[receiverID]
-			// fmt.Println(receiverConn)
-			// if exists {
+			// receiverConn := clients[receiverID]
+			// if receiverConn != nil {
 			// 	err := receiverConn.WriteJSON(resp)
 			// 	if err != nil {
 			// 		log.Println("Error sending message to receiver:", err)
@@ -176,24 +160,30 @@ func handleMessages(conn *websocket.Conn, userID string) {
 			// 	}
 			// }
 
-			receiverConn := clients[receiverID]
-			if receiverConn != nil {
-				err := receiverConn.WriteJSON(resp)
-				if err != nil {
-					log.Println("Error sending message to receiver:", err)
-				}
-			} else {
-				log.Println("Receiver not connected:", receiverID)
+			receiverConn, exists := clients[receiverID]
+			if !exists || receiverConn == nil {
+
+				log.Printf("Receiver %s not connected or connection is nil", receiverID)
 				errorResp := map[string]interface{}{
 					"type":    "error",
-					"content": "Receiver not online",
+					"content": "Receiver not online or connection is lost",
 				}
 				err := conn.WriteJSON(errorResp)
 				if err != nil {
 					log.Println("Error sending error to sender:", err)
 				}
+				continue
 			}
 
+			resp := map[string]interface{}{
+				"type":    "message",
+				"content": content,
+			}
+
+			err = receiverConn.WriteJSON(resp)
+			if err != nil {
+				log.Println("Error sending message to receiver:", err)
+			}
 			err := SendMessage(userID, receiverID, content)
 			if err != nil {
 				log.Println("Error saving message to database:", err)

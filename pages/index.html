@@ -134,6 +134,18 @@
     </main>
   </section>
 
+  <div class="chat-container" id="chatContainer" style="display: none;">
+    <div class="chat-header">
+      <!-- <span class="chat-username">User Name</span> -->
+    </div>
+    <div class="chat-body" id="output"></div>
+    <div class="chat-footer">
+      <input type="text" id="input" placeholder="Type a message..." />
+      <!-- <button id="sendMessageBtn">Send</button> -->
+      <button onclick="send()">send Message</button>
+    </div>
+  </div>
+
   <div class="receiver-container">
     <label for="receiverSelect">Choose a recipient:</label>
     <select id="receiverSelect">
@@ -141,10 +153,10 @@
     </select>
   </div>
 
-  <div class="content">
+  <!-- <div class="content">
     <input type="text" id="input">
     <button onclick="send()">send Message</button>
-  </div>
+  </div> -->
 
   <!--PRINT YOU MESSAGE-->
   <pre id="output"></pre>
@@ -163,158 +175,7 @@
   <script src="/static/interactions.js"></script>
   <script src="/static/posts.js"></script>
   <script src="/static/categories.js"></script>
+  <script src="/static/message.js"></script>
 </body>
-
-<script>
-  // var input = document.getElementById('input')
-  // var output = document.getElementById('output')
-  // var socket = new WebSocket("ws://localhost:4848/Connections")
-
-  // output.classList.add("new-class")
-  // socket.onopen = function(){
-  //   output.innerHTML += "Status : You CONNECTED\n"
-  // }
-
-  // socket.onmessage = function(e){
-  //   console.log(e);
-
-  //   output.innerHTML += "Message : " + e.data + "\n"
-  // }
-  // function send() {
-  //     if (input.value.trim()) {
-  //       socket.send(input.value);
-  //       input.value = ""; 
-  //     }
-  //   }
-
-  var input = document.getElementById('input');
-  var output = document.getElementById('output');
-  var socket = new WebSocket("ws://localhost:4848/Connections");
-  console.log("iscoonicted");
-  
-  var receiverSelect = document.getElementById('receiverSelect');
-  var sendMessageBtn = document.getElementById('sendMessageBtn');
-  var receiverContainer = document.querySelector('.receiver-container');
-
-
-  output.classList.add("new-class");
-
-  socket.onopen = function () {
-    output.innerHTML += "Status: You are connected\n";
-
-
-    socket.send(JSON.stringify({ type: 'get_receivers' }));
-  };
-
-  socket.onmessage = function (e) {
-    const message = JSON.parse(e.data);
-    console.log(message);
-
-
-    if (message.type === 'receivers') {
-
-      receiverSelect.innerHTML = '';
-      // default
-      var defaultOption = document.createElement('option');
-      defaultOption.value = '';
-      defaultOption.textContent = 'Choose a recipient:';
-      defaultOption.disabled = true;
-      defaultOption.selected = true;
-      receiverSelect.appendChild(defaultOption);
-
-      // Selectioner receiver
-      message.receivers.forEach(function (receiver) {
-        let option = document.createElement('option');
-        option.value = receiver.id;
-        // option.textContent = receiver.username + (receiver.isConnected ? ' (Online)' : ' (Offline)');
-        // option.dataset.isConnected = receiver.isConnected;
-        option.textContent = receiver.username;
-        receiverSelect.appendChild(option);
-      });
-
-
-      receiverContainer.style.display = 'block';
-    } else if (message.type === 'message') {
-      output.innerHTML += "Message: " + message.content + "\n";
-      displayMessage(message);
-    }
-  };
-
-
-  document.getElementById('sendMessageBtn').onclick = function () {
-    var selectedReceiver = receiverSelect.value;
-    var messageContent = document.getElementById('input').value;
-
-    if (selectedReceiver && messageContent.trim()) {
-
-      // if (!isReceiverConnected) {
-      //   alert("The recipient is currently offline. Please try again later.");
-      //   return;
-      // }
-
-      socket.send(JSON.stringify({
-        type: 'send_message',
-        receiverID: selectedReceiver,
-        content: messageContent
-      }));
-
-      displayMessage({
-        type: 'send_message',
-        receiverID: selectedReceiver,
-        content: messageContent
-      });
-
-      document.getElementById('input').value = '';
-    } else {
-      alert("Please select a recipient and type a message.");
-    }
-  };
-
-  function displayMessage(message) {
-    var messageElement = document.createElement('div');
-    messageElement.classList.add("message");
-
-    if (message.type === 'send_message') {
-      messageElement.classList.add('sent');
-      messageElement.textContent = "Sent: " + message.content;
-    } else if (message.type === 'receive_message') {
-      messageElement.classList.add('received');
-      messageElement.textContent = "Received: " + message.content;
-    }
-
-    output.appendChild(messageElement);
-    output.scrollTop = output.scrollHeight;
-  }
-
-  function send() {
-    var selectedReceiver = receiverSelect.value;
-    // var selectedReceiverOption = receiverSelect.options[receiverSelect.selectedIndex];
-    // var isReceiverConnected = selectedReceiverOption ? selectedReceiverOption.dataset.isConnected === 'true' : false;
-
-    if (selectedReceiver && input.value.trim()) {
-
-      // if (!isReceiverConnected) {
-      //   alert("The recipient is currently offline. Please try again later.");
-      //   return;
-      // }
-
-      socket.send(JSON.stringify({
-        type: 'send_message',
-        receiverID: selectedReceiver,
-        content: input.value
-      }));
-
-      displayMessage({
-        type: 'send_message',
-        receiverID: selectedReceiver,
-        content: input.value
-      });
-
-      input.value = "";
-    }
-  }
-
-
-</script>
 
 </html>
