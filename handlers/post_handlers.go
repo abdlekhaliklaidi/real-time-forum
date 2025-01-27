@@ -67,7 +67,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	UName, sessionToken, _, err := auth.RequireLogin(w, r)
-	if err != nil {
+	if err != nil || sessionToken == "guest" {
 		response["error"] = "Unauthorized access. Please log in."
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(response)

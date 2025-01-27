@@ -1,7 +1,7 @@
 var input = document.getElementById('input');
   var output = document.getElementById('output');
   var socket = new WebSocket("ws://localhost:4848/Connections");
-  console.log("iscoonicted");
+  // console.log("iscoonicted");
 
   var receiverSelect = document.getElementById('receiverSelect');
   var sendMessageBtn = document.getElementById('sendMessageBtn');

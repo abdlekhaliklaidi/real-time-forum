@@ -102,7 +102,7 @@
           <button type="submit">Create Post</button>
         </form>
         <!-- Categories -->
-        <div class="filter-container">
+        <div class="filter-container" id="categoryFilterContainer" style="display: none;">
           <label for="categoryFilter">Filter by Category:</label>
           <select id="categoryFilter">
             <option value="all">All Posts</option>
@@ -146,11 +146,16 @@
     </div>
   </div>
 
-  <div class="receiver-container">
+  <div class="receiver-container" id="receiverContainer" style="display: none;">
     <label for="receiverSelect">Choose a recipient:</label>
     <select id="receiverSelect">
       <option value="" disabled selected>Choose a recipient:</option>
     </select>
+  </div>
+
+  <div class="headere">
+    <div> Hello, please Login. </div>
+    <!-- <button id="authButton" class="auth-btn">Login</button> -->
   </div>
 
   <!-- <div class="content">
@@ -177,5 +182,25 @@
   <script src="/static/categories.js"></script>
   <script src="/static/message.js"></script>
 </body>
+
+<script>
+  const isLoggedIn = localStorage.getItem('isLoggedIn');  
+
+  if (isLoggedIn) {
+    document.getElementById('categoryFilterContainer').style.display = 'block';  
+  } else {
+    document.getElementById('categoryFilterContainer').style.display = 'none';
+  }
+</script>
+
+<script>
+  const isLoggedInn = localStorage.getItem('isLoggedIn');  
+
+  if (isLoggedInn) {
+    document.getElementById('receiverContainer').style.display = 'block';
+  } else {
+    document.getElementById('receiverContainer').style.display = 'none';
+  }
+</script>
 
 </html>
