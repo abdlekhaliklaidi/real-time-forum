@@ -15,16 +15,16 @@ import (
 
 // var clients = make(map[*websocket.Conn]bool)
 
-var clients = make(map[string]*websocket.Conn)
+var clients = make(map[int]*websocket.Conn)
 
 type Message struct {
 	Type       string `json:"type"`
-	ReceiverID string `json:"receiverID,omitempty"`
-	Content    string `json:"content,omitempty"`
+	ReceiverID int    `json:"receiverID"`
+	Content    string `json:"content"`
 }
 
 type Receiver struct {
-	ID       string `json:"id"`
+	ID       int    `json:"id"`
 	Username string `json:"username"`
 }
 
@@ -52,12 +52,7 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 	}
 	// defer conn.Close()
 
-	var userID string
-	// _, p, err := conn.ReadMessage()
-	// if err != nil {
-	// 	log.Println("Error reading initial message:", err)
-	// 	return
-	// }
+	var userID, offset int
 
 	userID, err = GetUserIDFromSessionToken(w, r)
 	// fmt.Println(GetUserIDFromSessionToken)
@@ -86,21 +81,33 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error sending receivers:", err)
 	}
 
-	// messages, err := GetMessages(userID)
-	// if err != nil {
-	// 	log.Println("Error retrieving messages:", err)
-	// }
+	for receiverID := range clients {
+		if receiverID != userID {
+			messages, err := GetMessages(userID, receiverID, offset)
+			if err != nil {
+				log.Println("Error retrieving messages:", err)
+				continue
+			}
+			err = conn.WriteJSON(messages)
+			if err != nil {
+				log.Println("Error sending previous messages:", err)
+			}
+		}
+	}
+
 	wg.Add(1)
 	go handleMessages(conn, userID)
 }
 
-func handleMessages(conn *websocket.Conn, userID string) {
-	defer wg.Done() // fin goroutin
+func handleMessages(conn *websocket.Conn, userID int) {
+	offset := 0
+	defer wg.Done()
+
 	for {
 		var message Message
 		err := conn.ReadJSON(&message)
 		if err != nil {
-			log.Println(err)
+			log.Println("Connection error:", err)
 			delete(clients, userID)
 			break
 		}
@@ -109,19 +116,23 @@ func handleMessages(conn *websocket.Conn, userID string) {
 		if message.Type == "select_receiver" {
 			receiverID := message.ReceiverID
 
-			messages, err := GetMessages(userID, receiverID)
+			messages, err := GetMessages(userID, receiverID, offset)
 			if err != nil {
 				log.Println("Error retrieving messages:", err)
 				continue
 			}
+			// conn.WriteJSON(messages)
+			// continue
 
-			for _, msg := range messages {
-				err := conn.WriteJSON(msg)
-				if err != nil {
-					log.Println("Error sending message:", err)
-				}
+			response := map[string]interface{}{
+				"type":     "previous_messages",
+				"messages": messages,
 			}
-			continue
+
+			err = conn.WriteJSON(response)
+			if err != nil {
+				log.Println("Error sending previous messages:", err)
+			}
 		}
 		//////
 
@@ -142,28 +153,10 @@ func handleMessages(conn *websocket.Conn, userID string) {
 				continue
 			}
 
-			// receiverConn := clients[receiverID]
-			// if receiverConn != nil {
-			// 	err := receiverConn.WriteJSON(resp)
-			// 	if err != nil {
-			// 		log.Println("Error sending message to receiver:", err)
-			// 	}
-			// } else {
-			// 	log.Println("Receiver not connected:", receiverID)
-			// 	errorResp := map[string]interface{}{
-			// 		"type":    "error",
-			// 		"content": "Receiver not online",
-			// 	}
-			// 	err := conn.WriteJSON(errorResp)
-			// 	if err != nil {
-			// 		log.Println("Error sending error to sender:", err)
-			// 	}
-			// }
-
 			receiverConn, exists := clients[receiverID]
 			if !exists || receiverConn == nil {
 
-				log.Printf("Receiver %s not connected or connection is nil", receiverID)
+				log.Printf("Receiver %d not connected or connection is nil", receiverID)
 				errorResp := map[string]interface{}{
 					"type":    "error",
 					"content": "Receiver not online or connection is lost",
@@ -184,7 +177,8 @@ func handleMessages(conn *websocket.Conn, userID string) {
 			if err != nil {
 				log.Println("Error sending message to receiver:", err)
 			}
-			err := SendMessage(userID, receiverID, content)
+
+			err = SendMessage(userID, receiverID, content)
 			if err != nil {
 				log.Println("Error saving message to database:", err)
 			}
@@ -218,63 +212,19 @@ func GetReceivers() ([]Receiver, error) {
 	return receivers, nil
 }
 
-// func GetMessages(userID string) ([]Message, error) {
-// 	DB, err := sql.Open("sqlite3", "forum.db")
-// 	if err != nil {
-// 		log.Printf("Error opening database: %v", err)
-// 		return nil, err
-// 	}
-// 	defer DB.Close()
-
-// 	rows, err := DB.Query(`
-// 		SELECT sender_id, receiver_id, content
-// 		FROM messages
-// 		WHERE sender_id = ? OR receiver_id = ?`, userID, userID)
-// 	if err != nil {
-// 		log.Printf("Error querying messages: %v", err)
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
-
-// 	var messages []Message
-// 	for rows.Next() {
-// 		var message Message
-// 		var senderID, receiverID, content string
-// 		err := rows.Scan(&senderID, &receiverID, &content)
-// 		if err != nil {
-// 			log.Printf("Error scanning message: %v", err)
-// 			return nil, err
-// 		}
-
-// 		if senderID == userID {
-// 			message.Type = "send_message"
-// 			message.ReceiverID = receiverID
-// 		} else {
-// 			message.Type = "receive_message"
-// 			message.ReceiverID = senderID
-// 		}
-// 		message.Content = content
-
-// 		messages = append(messages, message)
-// 	}
-
-// 	return messages, nil
-// }
-
-func GetMessages(senderID, receiverID string) ([]Message, error) {
+func GetMessages(senderID, receiverID, offset int) ([]Message, error) {
 	DB, err := sql.Open("sqlite3", "forum.db")
 	if err != nil {
 		log.Printf("Error opening database: %v", err)
 		return nil, err
 	}
 	defer DB.Close()
-
 	rows, err := DB.Query(`
-		SELECT sender_id, receiver_id, content, timestamp
-		FROM messages 
-		WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
-		ORDER BY timestamp ASC`,
-		senderID, receiverID, receiverID, senderID)
+       SELECT sender_id, receiver_id, content, created_at
+        FROM messages 
+        WHERE ((sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1))
+        ORDER BY created_at ASC
+        LIMIT 10 OFFSET $3`, senderID, receiverID, offset)
 	if err != nil {
 		log.Printf("Error querying messages: %v", err)
 		return nil, err
@@ -284,16 +234,16 @@ func GetMessages(senderID, receiverID string) ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var message Message
-		var senderID, receiverID, content string
-		var timestamp string
+		var senderIDI, receiverIDI int
+		var content, timestamp string
 
-		err := rows.Scan(&senderID, &receiverID, &content, &timestamp)
+		err := rows.Scan(&senderIDI, &receiverIDI, &content, &timestamp)
 		if err != nil {
 			log.Printf("Error scanning message: %v", err)
 			return nil, err
 		}
 
-		if senderID == senderID {
+		if senderIDI == senderID {
 			message.Type = "send_message"
 			message.ReceiverID = receiverID
 		} else {
@@ -308,7 +258,7 @@ func GetMessages(senderID, receiverID string) ([]Message, error) {
 	return messages, nil
 }
 
-func SendMessage(senderID string, receiverID string, content string) error {
+func SendMessage(senderID int, receiverID int, content string) error {
 	DB, err := sql.Open("sqlite3", "forum.db")
 	if err != nil {
 		log.Printf("Error opening database: %v", err)
@@ -329,18 +279,18 @@ func SendMessage(senderID string, receiverID string, content string) error {
 	return nil
 }
 
-func GetUserIDFromSessionToken(w http.ResponseWriter, r *http.Request) (string, error) {
+func GetUserIDFromSessionToken(w http.ResponseWriter, r *http.Request) (int, error) {
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
-		return "", fmt.Errorf("session token not found: %v", err)
+		return 0, fmt.Errorf("session token not found: %v", err)
 	}
 
-	var userID string
+	var userID int
 	err = database.DB.QueryRow("SELECT id FROM users WHERE session_token = ?", cookie.Value).Scan(&userID)
 	if err == sql.ErrNoRows {
-		return "", fmt.Errorf("session not valid or expired")
+		return 0, fmt.Errorf("session not valid or expired")
 	} else if err != nil {
-		return "", fmt.Errorf("database error: %v", err)
+		return 0, fmt.Errorf("database error: %v", err)
 	}
 
 	return userID, nil

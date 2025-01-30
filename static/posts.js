@@ -11,7 +11,7 @@ document.getElementById("postForm").addEventListener("submit", function (event) 
   }
 
   const formData = new FormData(this);
-  // console.log("post form data", formData);
+  
 
 
   fetch("/post_submit", {
@@ -49,6 +49,24 @@ let allPosts = [];
 async function loadPosts() {
   try {
 
+    const sessionResponse = await fetch("/check-session", {
+      method: "GET",
+      credentials: "same-origin",
+    });
+
+    const sessionData = await sessionResponse.json();
+
+    if (!sessionData.loggedIn) {
+      
+      const allPostsContainer = document.getElementById("allPosts");
+      allPostsContainer.innerHTML = `
+        <div style="padding: 20px; text-align: center; color: red;">
+          <strong>You must be logged in to view posts.</strong>
+        </div>
+      `;
+      return;
+    }
+
     const params = new URLSearchParams();
 
     if (selectedCategory && selectedCategory !== 'all') {
@@ -60,30 +78,27 @@ async function loadPosts() {
     }
 
     const response = await fetch(`/show_posts?${params.toString()}`);
-    
+
     if (!response.ok) {
       const errorData = await response.json();
-      // throw new Error("Failed to fetch data");
-      throw new Error(errorData.error || "Failed to fetch data");
+      const errorMessage = errorData.error || "Failed to fetch data";
+
+      console.error("Error:", errorMessage);
+     
     }
 
-    // const contentType = response.headers.get("content-type");
-    // if (!contentType || !contentType.includes("application/json")) {
-    //   throw new Error("Expected JSON, but got HTML");
-    // }
 
     allPosts = await response.json();
-    // console.log(allPosts);
-
+    
     const allPostsContainer = document.getElementById("allPosts");
+
     if (!allPostsContainer) {
       console.error("Element with id 'allPosts' not found!");
       return;
     }
 
     if (allPosts.length === 0) {
-      allPostsContainer.innerHTML = `
-      // <p style = "color:red"; >No posts found.</p>`;
+
       allPostsContainer.innerHTML = `
       <div style="
         padding: 20px; 
@@ -97,7 +112,6 @@ async function loadPosts() {
         <strong>Error:</strong> No posts found.
       </div>
     `;
-
       return;
     }
 
@@ -105,12 +119,12 @@ async function loadPosts() {
     currentIndex = 0;
     loadMorePosts();
   } catch (error) {
+    
     console.error("Error loading posts:", error);
-    // console.log("test")
-    // console.log("error" ,error)
-    console.error("Failed to load posts test: " + error.message);
+    alert("An error occurred while loading posts.");
   }
 }
+
 function loadMorePosts() {
   const allPostsContainer = document.getElementById("allPosts");
   const loadMoreBtn = document.getElementById("loadMoreBtn");
@@ -143,7 +157,6 @@ loadPosts();
 
 //   create a post element
 function createPostElement(postData) {
-  // console.log(postData);
 
   const postDiv = document.createElement("div");
   postDiv.classList.add(`post${postData.PostID}`, "post");
@@ -234,8 +247,6 @@ document.getElementById("categoryFilter").addEventListener("change", function ()
   categoy.value = "all";
   postsPerPage = 5;
   loadPosts();
-  console.log("selectedCategory", selectedCategory);
-
 });
 
 document.getElementById("ownershipFilter").addEventListener("change", function () {
@@ -245,112 +256,13 @@ document.getElementById("ownershipFilter").addEventListener("change", function (
   categoy.value = "all";
   postsPerPage = 5;
   loadPosts();
-  console.log("selectedOwnership", selectedOwnership);
+  // console.log("selectedOwnership", selectedOwnership);
 
 });
 
-async function filterPostsByOwnership(ownership) {
-  try {
-    const response = await fetch(`/show_posts?ownership=${ownership}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const posts = await response.json();
-
-    const allPostsContainer = document.getElementById("allPosts");
-    if (!allPostsContainer) {
-      console.error("Element with id 'allPosts' not found!");
-      return;
-    }
-
-    allPostsContainer.innerHTML = "";
-
-    if (posts.length === 0) {
-      console.log("No posts found for the selected posts.");
-      // allPostsContainer.innerHTML = "<p>No posts found.</p>";
-      allPostsContainer.innerHTML = `
-      <div style="
-        padding: 20px; 
-        background-color: #ffecec; 
-        color: #d8000c; 
-        border: 1px solid #d8000c; 
-        border-radius: 5px; 
-        text-align: center;
-      ">
-        <strong>Error:</strong> No posts found.
-      </div>
-    `;
-
-      return;
-    }
-
-    posts.forEach((post) => {
-      const postElement = createPostElement(post);
-      allPostsContainer.appendChild(postElement);
-    });
-
-    allPosts = [];
-    currentIndex = 0;
-    loadMorePosts();
-
-  } catch (error) {
-    console.error("Error filtering:", error);
-    alert("failed to filter posts.");
-  }
-}
-
-
-async function filterPostsByCategory(category) {
-  try {
-    const response = await fetch(`/show_posts?category=${category}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const posts = await response.json();
-
-    const allPostsContainer = document.getElementById("allPosts");
-    if (!allPostsContainer) {
-      console.error("Element with id 'allPosts' not found!");
-      return;
-    }
-    // console.log(category);
-
-
-    allPostsContainer.innerHTML = "";
-
-    if (posts.length === 0) {
-      console.log("No posts found for the selected category.");
-      allPostsContainer.innerHTML = `
-      <style>
-      p{
-      color: red;
-      }
-      </style>
-      <p>No posts found for the selected category.</p>`
-      return;
-    }
-
-    posts.forEach((post) => {
-      const postElement = createPostElement(post);
-      allPostsContainer.appendChild(postElement);
-    });
-
-
-    allPosts = [];
-    currentIndex = 0;
-    loadMorePosts();
-
-  } catch (error) {
-    console.error("Error filtering posts by category:", error);
-    alert("Failed to filter posts by category.");
-  }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   const ownershipFilterContainer = document.getElementById("ownershipFilterContainer");
-
 
   fetch("/check-session", {
     method: "GET",
