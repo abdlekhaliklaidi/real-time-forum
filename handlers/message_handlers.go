@@ -21,6 +21,7 @@ type Message struct {
 	Type       string `json:"type"`
 	ReceiverID int    `json:"receiverID"`
 	Content    string `json:"content"`
+	Offset     int    `json:"offset"`
 }
 
 type Receiver struct {
@@ -100,7 +101,7 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleMessages(conn *websocket.Conn, userID int) {
-	offset := 0
+	// offset := 0
 	defer wg.Done()
 
 	for {
@@ -115,8 +116,8 @@ func handleMessages(conn *websocket.Conn, userID int) {
 		/////
 		if message.Type == "select_receiver" {
 			receiverID := message.ReceiverID
-
-			messages, err := GetMessages(userID, receiverID, offset)
+			// fmt.Println(offset, "strring")
+			messages, err := GetMessages(userID, receiverID, message.Offset)
 			if err != nil {
 				log.Println("Error retrieving messages:", err)
 				continue
@@ -223,7 +224,7 @@ func GetMessages(senderID, receiverID, offset int) ([]Message, error) {
        SELECT sender_id, receiver_id, content, created_at
         FROM messages 
         WHERE ((sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1))
-        ORDER BY created_at ASC
+        ORDER BY created_at DESC
         LIMIT 10 OFFSET $3`, senderID, receiverID, offset)
 	if err != nil {
 		log.Printf("Error querying messages: %v", err)
