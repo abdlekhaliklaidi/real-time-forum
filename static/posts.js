@@ -121,7 +121,9 @@ async function loadPosts() {
   } catch (error) {
     
     console.error("Error loading posts:", error);
-    alert("An error occurred while loading posts.");
+    // alert("An error occurred while loading posts.");
+    console.log("An error occurred while loading posts.");
+    
   }
 }
 

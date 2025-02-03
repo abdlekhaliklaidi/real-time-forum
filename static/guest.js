@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-
   const loginToggle = document.getElementById("loginToggle");
   const authPopup = document.getElementById("authPopup");
   const closePopup = document.getElementById("closePopup");
@@ -11,7 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateUI() {
     const commentsSection = document.querySelectorAll(".comment-form");
     const disableInteraction = document.querySelectorAll(".interaction-button:not(.comment-button)");
-
 
     fetch("/check-session", {
       method: "GET",
@@ -41,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
             button.disabled = false;
           });
 
+          authPopup.classList.remove("show"); 
         } else {
           // User is not logged in
           console.log("User is not logged in.");
@@ -80,40 +79,39 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
-
-  // Start observing the document body for added nodes
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // Initial call to updateUI in case elements are already present
-  updateUI();
-
-
-  // Toggle popup
+  
   loginToggle.addEventListener("click", () => {
     authPopup.classList.add("show");
   });
 
+  // Start observing the document body for added nodes
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  
+  updateUI();
+
+  
+  authPopup.classList.add("show"); 
+
+  // Close the popup when clicking on the close button
   closePopup.addEventListener("click", () => {
     authPopup.classList.remove("show");
   });
 
-  // Close popup when clicking outside
   authPopup.addEventListener("click", (e) => {
     if (e.target === authPopup) {
       authPopup.classList.remove("show");
     }
   });
 
-  // Tab switching
+  // Tab switching between login and register
   authTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       const formType = tab.getAttribute("data-form");
 
-      // Update tab styles
       authTabs.forEach((t) => t.classList.remove("active"));
       tab.classList.add("active");
 
-      // Show/hide forms
       authForms.forEach((form) => {
         form.classList.remove("active");
         if (form.id === `${formType}Form`) {

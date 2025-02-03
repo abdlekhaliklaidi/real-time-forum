@@ -496,7 +496,7 @@ button:disabled {
 }
 
 .chat-header {
-  background-color: #075e54;
+  background-color: #007bff;
   color: #fff;
   padding: 16px;
   font-size: 18px;
@@ -530,7 +530,7 @@ button:disabled {
 }
 
 .chat-footer button {
-  background-color: #075e54;
+  background-color: #1877f2;
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -539,7 +539,7 @@ button:disabled {
 }
 
 .chat-footer button:hover {
-  background-color: #128c7e;
+  background-color: #0056b3;
 }
 
 .message {
@@ -590,4 +590,19 @@ button:disabled {
   background-color: green;
   margin-left: 8px;
   vertical-align: middle;
+}
+
+.closePopup1 {
+  /* position: absolute; */
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+}
+
+.closePopup1:hover {
+  color: #333;
 }

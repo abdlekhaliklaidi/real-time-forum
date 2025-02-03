@@ -51,6 +51,8 @@ document
         document.getElementById("loginForm").reset();
         setTimeout(() => {
           window.location.href = "/";
+          // loadPosts();
+          // window.location.href = "/";
         }, 500);
       })
       .catch((error) => {

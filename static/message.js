@@ -1,3 +1,7 @@
+document.getElementById('closePopup1').addEventListener('click', function() {
+  document.getElementById('chatContainer').style.display = 'none';
+});
+
 var input = document.getElementById('input');
 var output = document.getElementById('output');
 var socket = new WebSocket("ws://localhost:4848/Connections");
@@ -82,12 +86,25 @@ socket.onmessage = function (e) {
   }
 };
 
+let isThrottled = false;
+
+function throttle(callback, delay) {
+  if (!isThrottled) {
+    callback();  
+    isThrottled = true; 
+    setTimeout(() => {
+      isThrottled = false; 
+    }, delay);
+  }
+}
+
 // pagination
 const chatContainer = document.querySelector('.chat-body');
+
+// const throttledLoadMoreMessages = _.throttle(loadMoreMessages, 500);
 chatContainer.addEventListener('scroll', function () {
-  if (chatContainer.scrollTop < 100) {  // Load when close to the top
-    loadMoreMessages();
-    
+  if (chatContainer.scrollTop < 100) {
+    throttle(loadMoreMessages, 500); 
   }
 });
 
