@@ -1,5 +1,6 @@
-document.getElementById('closePopup1').addEventListener('click', function() {
+document.getElementById('closePopup1').addEventListener('click', function () {
   document.getElementById('chatContainer').style.display = 'none';
+  lastSelectUser = null;
 });
 
 var input = document.getElementById('input');
@@ -27,7 +28,7 @@ socket.onmessage = function (e) {
   if (message.type === 'error' && message.content === 'Receiver not online or connection is lost') {
     alert("The recipient is currently offline. Please try again later.");
   }
-  
+
   console.log(message);
 
   if (message.type === 'receivers') {
@@ -47,7 +48,7 @@ socket.onmessage = function (e) {
       option.value = receiver.id;
       option.textContent = receiver.username;
 
-     // online
+      // online
       if (receiver.isConnected) {
         let greenDot = document.createElement('span');
         greenDot.classList.add('green-dot');
@@ -63,11 +64,13 @@ socket.onmessage = function (e) {
 
 
     receiverContainer.style.display = 'block';
+    // output.innerHTML = ''; 
   } else if (message.type === 'message') {
     output.innerHTML += message.content + "\n";
     displayMessage(message);
 
   } else if (message.type === 'previous_messages') {
+    // output.innerHTML = '';
     message.messages.forEach(function (msg) {
       // displayMessage(msg);
       var messageElement = document.createElement('div');
@@ -90,10 +93,10 @@ let isThrottled = false;
 
 function throttle(callback, delay) {
   if (!isThrottled) {
-    callback();  
-    isThrottled = true; 
+    callback();
+    isThrottled = true;
     setTimeout(() => {
-      isThrottled = false; 
+      isThrottled = false;
     }, delay);
   }
 }
@@ -104,7 +107,7 @@ const chatContainer = document.querySelector('.chat-body');
 // const throttledLoadMoreMessages = _.throttle(loadMoreMessages, 500);
 chatContainer.addEventListener('scroll', function () {
   if (chatContainer.scrollTop < 100) {
-    throttle(loadMoreMessages, 500); 
+    throttle(loadMoreMessages, 500);
   }
 });
 
@@ -122,20 +125,31 @@ function loadMoreMessages() {
   }
 }
 
+let lastSelectUser = null
+
 //// chat
 receiverSelect.addEventListener('change', function () {
+  if (lastSelectUser != receiverSelect.value) {
+    output.innerHTML = '';
+    offset = 10;
+  }
+  // console.log("-----", lastSelectUser, receiverSelect.value);
+
+  lastSelectUser = receiverSelect.value;
   var selectedReceiver = parseInt(receiverSelect.value);
 
   if (selectedReceiver) {
     document.getElementById('chatContainer').style.display = 'block';
     var selectedReceiverText = receiverSelect.options[receiverSelect.selectedIndex].text;
     document.getElementById('chatUsername').textContent = selectedReceiverText;
-    
-    output.innerHTML = '';
+
+    // output.innerHTML = '';
     socket.send(JSON.stringify({
       type: 'select_receiver',
       receiverID: selectedReceiver
     }));
+    loadMoreMessages();
+
   } else {
     document.getElementById('chatContainer').style.display = 'none';
   }
@@ -180,9 +194,7 @@ function displayMessage(message) {
 
   output.appendChild(messageElement);
   output.scrollTop = output.scrollHeight;
-
-  // output.insertBefore(messageElement, output.firstChild);
-  // output.scrollTop = output.scrollHeight;
+ 
 }
 
 function send(id) {

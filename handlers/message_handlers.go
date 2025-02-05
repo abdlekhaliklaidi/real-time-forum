@@ -13,9 +13,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// var clients = make(map[*websocket.Conn]bool)
-
 var clients = make(map[int]*websocket.Conn)
+
+var clientsMutex sync.Mutex
 
 type Message struct {
 	Type       string `json:"type"`
@@ -35,23 +35,16 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// var stopChan = make(chan bool)
-
 // WaitGroup//goroutines
 var wg sync.WaitGroup
 
 func Connections(w http.ResponseWriter, r *http.Request) {
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	// defer conn.Close()
 
 	var userID, offset int
 
@@ -64,8 +57,9 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 
 	// userID = "7"
 	// log.Println("Adding client", userID)
-
+    clientsMutex.Lock()
 	clients[userID] = conn
+	clientsMutex.Unlock()
 
 	receivers, err := GetReceivers()
 	if err != nil {
@@ -101,7 +95,7 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleMessages(conn *websocket.Conn, userID int) {
-	// offset := 0
+	
 	defer wg.Done()
 
 	for {
@@ -109,7 +103,10 @@ func handleMessages(conn *websocket.Conn, userID int) {
 		err := conn.ReadJSON(&message)
 		if err != nil {
 			log.Println("Connection error:", err)
+
+			clientsMutex.Lock()
 			delete(clients, userID)
+			clientsMutex.Unlock()
 			break
 		}
 
@@ -122,8 +119,6 @@ func handleMessages(conn *websocket.Conn, userID int) {
 				log.Println("Error retrieving messages:", err)
 				continue
 			}
-			// conn.WriteJSON(messages)
-			// continue
 
 			response := map[string]interface{}{
 				"type":     "previous_messages",
@@ -221,11 +216,11 @@ func GetMessages(senderID, receiverID, offset int) ([]Message, error) {
 	}
 	defer DB.Close()
 	rows, err := DB.Query(`
-       SELECT sender_id, receiver_id, content, created_at
-        FROM messages 
-        WHERE ((sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1))
-        ORDER BY created_at DESC
-        LIMIT 10 OFFSET $3`, senderID, receiverID, offset)
+    SELECT sender_id, receiver_id, content, created_at
+    FROM messages 
+    WHERE ((sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1))
+    ORDER BY created_at DESC, id DESC
+    LIMIT 10 OFFSET $3`, senderID, receiverID, offset)
 	if err != nil {
 		log.Printf("Error querying messages: %v", err)
 		return nil, err
