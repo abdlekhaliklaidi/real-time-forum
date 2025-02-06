@@ -47,7 +47,7 @@ document
         });
       })
       .then((data) => {
-        alert(data.message);
+        // alert(data.message);
         document.getElementById("loginForm").reset();
         setTimeout(() => {
           window.location.href = "/";

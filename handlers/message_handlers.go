@@ -39,7 +39,6 @@ var upgrader = websocket.Upgrader{
 var wg sync.WaitGroup
 
 func Connections(w http.ResponseWriter, r *http.Request) {
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -57,7 +56,7 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 
 	// userID = "7"
 	// log.Println("Adding client", userID)
-    clientsMutex.Lock()
+	clientsMutex.Lock()
 	clients[userID] = conn
 	clientsMutex.Unlock()
 
@@ -95,7 +94,6 @@ func Connections(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleMessages(conn *websocket.Conn, userID int) {
-	
 	defer wg.Done()
 
 	for {

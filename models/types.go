@@ -40,8 +40,8 @@ type Server struct {
 
 type Message struct {
 	Type       string `json:"type"`
-	ReceiverID string `json:"receiverID,omitempty"`
-	Content    string `json:"content,omitempty"`
+	ReceiverID string `json:"receiverID"`
+	Content    string `json:"content"`
 }
 
 type Receiver struct {

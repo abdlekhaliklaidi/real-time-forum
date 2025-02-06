@@ -65,9 +65,35 @@
               <small style="color: red; display: none"></small>
             </div>
             <div class="form-group">
+              <label for="firstName">First Name</label>
+              <input type="text" id="firstName" name="firstName" required />
+              <small style="color: red; display: none;"></small>
+            </div>
+            
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <input type="text" id="lastName" name="lastName" required />
+              <small style="color: red; display: none;"></small>
+            </div>                 
+            <div class="form-group">
               <label for="registerEmail">Email</label>
               <input type="email" id="registerEmail" name="email" required />
               <small style="color: red; display: none"></small>
+            </div>
+            <div class="form-group">
+              <label for="Gender">Gender</label>
+              <select id="Gender" name="gender" required>
+                <option value="">Select Gender</option>
+                <option value="M">M</option>
+                <option value="F">F</option>
+              </select>
+              <small id="gender-error" style="color: red; display: none;">Please select a valid gender.</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="Age">Age</label>
+              <input type="number" id="age" name="age" required min="1" max="120" />
+              <small id="age-error" style="color: red; display: none;">Age must be between 1 and 120.</small>
             </div>
             <div class="form-group">
               <label for="registerPassword">Password</label>

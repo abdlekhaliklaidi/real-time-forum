@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,13 +115,43 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := utils.EscapeString(r.FormValue("username"))
-	// fmt.Println(username)
-
-	email := utils.EscapeString(r.FormValue("email"))
+	firstName := utils.EscapeString(r.FormValue("firstName"))
+	lastName := utils.EscapeString(r.FormValue("lastName"))
+	email := utils.EscapeString(strings.ToLower(r.FormValue("email")))
+	gender := utils.EscapeString(r.FormValue("gender"))
+	age := utils.EscapeString(r.FormValue("age"))
 	password := utils.EscapeString(r.FormValue("password"))
-	email = strings.ToLower(email)
 
-	errors, valid := ValidateInput(username, email, password)
+	if gender == "" || (gender != "M" && gender != "F") {
+		response["error"] = "Gender must be either 'M' or 'F'"
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	ageInt, err := strconv.Atoi(age)
+	if err != nil || ageInt < 1 || ageInt > 120 {
+		response["error"] = "Age must be a number between 1 and 120"
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// if firstName == "" {
+	// 	response["error"] = "First Name is required"
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	json.NewEncoder(w).Encode(response)
+	// 	return
+	// }
+
+	// if lastName == "" {
+	// 	response["error"] = "Last Name is required"
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	json.NewEncoder(w).Encode(response)
+	// 	return
+	// }
+
+	errors, valid := ValidateInput(username, firstName, lastName, email, gender, age, password)
 	if !valid {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -160,7 +191,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	sessionToken, _ := uuid.NewV4()
 
-	_, err = database.DB.Exec("INSERT INTO users (username, email, password, session_token) VALUES (?, ?, ?, ?)", username, email, hashedPassword, sessionToken)
+	_, err = database.DB.Exec("INSERT INTO users (username, firstname, lastname, email, gender, age, password, session_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", firstName, lastName, username, email, gender, age, hashedPassword, sessionToken)
 	if err != nil {
 		log.Printf("Error inserting user: %v", err)
 		response = map[string]string{"error": "Registration failed"}
@@ -240,8 +271,9 @@ func CheckSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ValidateInput(username, email, password string) (map[string]string, bool) {
+func ValidateInput(username, firstName, lastName, email, gender, age, password string) (map[string]string, bool) {
 	errors := make(map[string]string)
+
 	const maxUsername = 50
 	const maxEmail = 100
 	const maxPassword = 100
