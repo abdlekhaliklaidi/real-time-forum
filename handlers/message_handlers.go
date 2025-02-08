@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"forum/database"
 
@@ -22,6 +23,8 @@ type Message struct {
 	ReceiverID int    `json:"receiverID"`
 	Content    string `json:"content"`
 	Offset     int    `json:"offset"`
+	CreatedAt  string `json:"created_at"`
+	// Username   string `json:"username"`
 }
 
 type Receiver struct {
@@ -134,6 +137,7 @@ func handleMessages(conn *websocket.Conn, userID int) {
 		case "send_message":
 			receiverID := message.ReceiverID
 			content := message.Content
+			// username := message.Username
 
 			if receiverID == userID {
 				errorResp := map[string]interface{}{
@@ -165,6 +169,8 @@ func handleMessages(conn *websocket.Conn, userID int) {
 			resp := map[string]interface{}{
 				"type":    "message",
 				"content": content,
+				// "username":   username,
+				"created_at": time.Now().Format(time.RFC3339),
 			}
 
 			err = receiverConn.WriteJSON(resp)
@@ -229,9 +235,9 @@ func GetMessages(senderID, receiverID, offset int) ([]Message, error) {
 	for rows.Next() {
 		var message Message
 		var senderIDI, receiverIDI int
-		var content, timestamp string
+		var content, createdAt string
 
-		err := rows.Scan(&senderIDI, &receiverIDI, &content, &timestamp)
+		err := rows.Scan(&senderIDI, &receiverIDI, &content, &createdAt)
 		if err != nil {
 			log.Printf("Error scanning message: %v", err)
 			return nil, err
@@ -245,6 +251,8 @@ func GetMessages(senderID, receiverID, offset int) ([]Message, error) {
 			message.ReceiverID = senderID
 		}
 		message.Content = content
+		message.CreatedAt = createdAt
+		// message.Username = username
 
 		messages = append(messages, message)
 	}

@@ -5,7 +5,7 @@ document.getElementById('closePopup1').addEventListener('click', function () {
 
 var input = document.getElementById('input');
 var output = document.getElementById('output');
-var socket = new WebSocket("ws://localhost:4848/Connections");
+var socket = new WebSocket("ws://localhost:4948/Connections");
 
 
 var receiverSelect = document.getElementById('receiverSelect');
@@ -29,7 +29,7 @@ socket.onmessage = function (e) {
     alert("The recipient is currently offline. Please try again later.");
   }
 
-  console.log(message);
+  // console.log(message);
 
   if (message.type === 'receivers') {
 
@@ -83,6 +83,17 @@ socket.onmessage = function (e) {
         messageElement.classList.add('received');
         messageElement.textContent = msg.content;
       }
+      /////Time
+      var timeElement = document.createElement('span');
+      timeElement.classList.add('message-time');
+      var timestamp = new Date(msg.created_at);
+      timeElement.textContent = timestamp.toLocaleTimeString();
+      messageElement.appendChild(timeElement);
+
+      // var usernameElemnt = document.usernameElemnt('span');
+      // usernameElemnt.classList.add('message-username');
+      // usernameElemnt.textContent = msg.username.toLocaleTimeString();
+      // usernameElemnt.appendChild(usernameElemnt);
 
       output.insertBefore(messageElement, output.firstChild);
     });
@@ -139,7 +150,14 @@ receiverSelect.addEventListener('change', function () {
   var selectedReceiver = parseInt(receiverSelect.value);
 
   if (selectedReceiver) {
-    document.getElementById('chatContainer').style.display = 'block';
+    let chatContainer = document.getElementById('chatContainer');
+    if (!chatContainer) {
+      chatContainer = document.createElement('div');
+      chatContainer.id = 'chatContainer';
+      document.body.appendChild(chatContainer); 
+    }
+
+    chatContainer.style.display = 'block';
     var selectedReceiverText = receiverSelect.options[receiverSelect.selectedIndex].text;
     document.getElementById('chatUsername').textContent = selectedReceiverText;
 
@@ -158,6 +176,7 @@ receiverSelect.addEventListener('change', function () {
 /////// 
 
 document.getElementById('sendMessageBtn').onclick = function () {
+  var receiverSelect = document.getElementById('receiverSelect');
   var selectedReceiver = parseInt(receiverSelect.value);
   var messageContent = document.getElementById('input').value;
 
@@ -181,9 +200,39 @@ document.getElementById('sendMessageBtn').onclick = function () {
 };
 
 function displayMessage(message) {
+// var usernameElemnt = document.createElement('div');
+// usernameElemnt.classList.add('message-username');
+
+// if (message.username){
+//   usernameElemnt.textContent = message.username.toLocaleTimeString();
+// }
+
+// var contentElemente = document.createElement('span');
+//   contentElemente.classList.add('message-content');
+//   contentElemente.textContent = message.content;
+
+//   messageElement.appendChild(usernameElemnt);
+//   messageElement.appendChild(contentElemente);
+
+////////
   var messageElement = document.createElement('div');
   messageElement.classList.add("message");
+//////// TIME
+  var timeElement = document.createElement('span');
+  timeElement.classList.add('message-time');
 
+  if (message.created_at) {
+    var timestamp = new Date(message.created_at);
+    timeElement.textContent = timestamp.toLocaleTimeString();
+  }
+
+  var contentElement = document.createElement('span');
+  contentElement.classList.add('message-content');
+  contentElement.textContent = message.content;
+
+  messageElement.appendChild(timeElement);
+  messageElement.appendChild(contentElement);
+////////////
   if (message.type === 'send_message') {
     messageElement.classList.add('sent');
     messageElement.textContent = message.content;

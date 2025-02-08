@@ -12,7 +12,6 @@ import (
 	"forum/handlers"
 )
 
-
 func main() {
 	if err := database.InitDB(); err != nil {
 		log.Fatalf("Database initialization failed: %v", err)
@@ -35,9 +34,9 @@ func main() {
 	http.HandleFunc("/logout", auth.LogoutHandler)
 	http.HandleFunc("/register", auth.RegisterHandler)
 
-	log.Println("Server started on :4848")
-	fmt.Println("http://localhost:4848/")
-	err := http.ListenAndServe(":4848", nil)
+	log.Println("Server started on :4948")
+	fmt.Println("http://localhost:4948/")
+	err := http.ListenAndServe(":4948", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

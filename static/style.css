@@ -357,6 +357,7 @@ button:disabled {
 .auth-container {
   background-color: white;
   width: 400px;
+  height: 400px;
   padding: 1.5rem; 
   border-radius: 10px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -546,10 +547,11 @@ button:disabled {
 
 .message {
   padding: 8px 12px;
-  margin-bottom: 16px;
   border-radius: 20px;
   font-size: 16px;
-  display: block; 
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
 }
 
 .sent {
@@ -559,6 +561,7 @@ button:disabled {
   padding: 10px 15px;  
   border-radius: 10px; 
   max-width: 100%; 
+  align-self: flex-end;
 }
 
 .received {
@@ -569,6 +572,7 @@ button:disabled {
   padding: 10px 15px;
   border-radius: 10px;
   max-width: 100%;
+  align-self: flex-start;
 }
 
 .headere {
@@ -607,4 +611,16 @@ button:disabled {
 
 .closePopup1:hover {
   color: #333;
+}
+
+.message-content {
+  font-size: 1em;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.message-time {
+  font-size: 0.8em;
+  color: #888;
+  margin-top: 5px;
 }

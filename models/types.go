@@ -5,12 +5,13 @@ import (
 )
 
 type Post struct {
-	PostID     int
-	Author     string
+	PostID int
+	// Author     string
 	Title      string
 	Content    string
 	Categories []string
 	Comments   []CommentWithLike
+	Username   string              
 }
 
 type PostWithLike struct {
@@ -40,8 +41,10 @@ type Server struct {
 
 type Message struct {
 	Type       string `json:"type"`
-	ReceiverID string `json:"receiverID"`
+	ReceiverID int    `json:"receiverID"`
 	Content    string `json:"content"`
+	Offset     int    `json:"offset"`
+	CreatedAt  string `json:"created_at"`
 }
 
 type Receiver struct {

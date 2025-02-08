@@ -59,6 +59,7 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	response := make(map[string]interface{})
 
+	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		response["error"] = "Invalid request method."
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -67,57 +68,19 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	UName, sessionToken, _, err := auth.RequireLogin(w, r)
-	if err != nil || sessionToken == "guest" {
-		response["error"] = "Unauthorized access. Please log in."
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
+		response["error"] = "Unauthorized access. Please log in."
 		json.NewEncoder(w).Encode(response)
 		return
 	}
-	category := r.URL.Query().Get("category")
-	ownership := r.URL.Query().Get("ownership")
-	var postStmt string
-	var postRows *sql.Rows
-
-	if ownership == "my_posts" {
-		postStmt = `
-				SELECT p.id, p.title, p.content
-				FROM Posts p
-				INNER JOIN users u ON p.user_id = u.id
-				WHERE u.session_token = ?
-				ORDER BY p.created_at DESC
-			`
-		postRows, err = database.DB.Query(postStmt, sessionToken)
-
-	} else if ownership == "liked_posts" {
-		postStmt = `
-				SELECT p.id, p.title, p.content
-				FROM Posts p
-				INNER JOIN post_likes pl ON p.id = pl.post_id
-				INNER JOIN users u ON pl.user_id = u.id
-				WHERE u.session_token = ? AND pl.is_like = true
-				ORDER BY p.created_at DESC
-			`
-		postRows, err = database.DB.Query(postStmt, sessionToken)
-	} else {
-		if category == "all" || category == "" {
-			postStmt = "SELECT id, title, content FROM Posts ORDER BY created_at DESC"
-			postRows, err = database.DB.Query(postStmt)
-		} else {
-			postStmt = `
-				SELECT p.id, p.title, p.content
-				FROM Posts p
-				INNER JOIN post_categories pc ON p.id = pc.post_id
-				INNER JOIN categories c ON pc.category_id = c.id
-				WHERE c.name = ?
-				ORDER BY p.created_at DESC
-			`
-			postRows, err = database.DB.Query(postStmt, category)
-		}
-	}
-
+	postStmt := "SELECT id, user_id, title, content FROM Posts ORDER BY created_at DESC"
+	postRows, err := database.DB.Query(postStmt)
 	if err != nil {
 		log.Printf("Error querying posts: %v", err)
-		http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
+		response["error"] = "Error retrieving posts"
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 	defer postRows.Close()
@@ -126,28 +89,18 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 	for postRows.Next() {
 		var p models.Post
 		var postWithLike models.PostWithLike
-		var postID int
-		err = postRows.Scan(&postID, &p.Title, &p.Content)
+		var postID, userID int
+		err = postRows.Scan(&postID, &userID, &p.Title, &p.Content)
 		if err != nil {
 			log.Printf("Error scanning post: %v", err)
 			continue
 		}
-		var userID int
-		userIdStmt := "SELECT user_id from posts WHERE id = ?"
-		err = database.DB.QueryRow(userIdStmt, postID).Scan(&userID)
+
+		var username string
+		err = database.DB.QueryRow("SELECT username FROM users WHERE id = ?", userID).Scan(&username)
 		if err != nil {
-			response["error"] = "Unauthorized access. Please log in."
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
-		}
-		authorStmt := "SELECT username from users WHERE id = ?"
-		err = database.DB.QueryRow(authorStmt, userID).Scan(&p.Author)
-		if err != nil {
-			response["error"] = "Unauthorized access. Please log in."
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(response)
-			return
+			log.Printf("Error fetching username for userID %d: %v", userID, err)
+			continue
 		}
 
 		/*****/
@@ -167,7 +120,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 			err = database.DB.QueryRow(`
 			SELECT is_like FROM post_likes 
 			WHERE post_id = ? AND user_id = ?
-		`, postID, userID).Scan(&isLike)
+			`, postID, userID).Scan(&isLike)
 
 			if err != nil && err != sql.ErrNoRows {
 				log.Printf("Error retrieving like status for post %d: %v", postID, err)
@@ -188,12 +141,12 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 		/***********/
 		// Retrieve like and dislike counts for the current post
 		err = database.DB.QueryRow(`
-		 SELECT 
-			 COUNT(CASE WHEN is_like = true THEN 1 END) AS like_count,
-			 COUNT(CASE WHEN is_like = false THEN 1 END) AS dislike_count
-		 FROM post_likes
-		 WHERE post_id = ?
-	 `, postID).Scan(&postWithLike.LikeCount, &postWithLike.DislikeCount)
+				SELECT 
+				COUNT(CASE WHEN is_like = true THEN 1 END) AS like_count,
+				COUNT(CASE WHEN is_like = false THEN 1 END) AS dislike_count
+				FROM post_likes
+				WHERE post_id = ?
+				`, postID).Scan(&postWithLike.LikeCount, &postWithLike.DislikeCount)
 		if err != nil {
 			log.Printf("Error retrieving like/dislike counts for post %d: %v", postID, err)
 			continue
@@ -230,6 +183,7 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 		p.Categories = categories
 		p.PostID = postID
 		p.Comments = comments
+		p.Username = username
 
 		postWithLike.Post = p
 
@@ -238,7 +192,6 @@ func ShowPosts(w http.ResponseWriter, r *http.Request) {
 
 	if len(posts) == 0 {
 		log.Println("No posts found.")
-		posts = []models.PostWithLike{}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -299,7 +252,7 @@ func PostSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//        check if the user exists
+	// check if the user exists
 	var exists bool
 	err := database.DB.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE username = ?)", username).Scan(&exists)
 	if err != nil {
@@ -335,12 +288,13 @@ func PostSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Enforce the limit (30-second cooldown)
 	if err != sql.ErrNoRows {
 		timeSinceLastPost := time.Since(lastPostTime)
-		const postCooldown = 1 * time.Second
+		const postCooldown = 30 * time.Second
 		if timeSinceLastPost < postCooldown {
 			response["error"] = fmt.Sprintf(
-				"You can only create a post every 1 seconds. Please wait %d seconds.",
+				"You can only create a post every 30 seconds. Please wait %d seconds.",
 				int(postCooldown.Seconds()-timeSinceLastPost.Seconds()),
 			)
 			w.WriteHeader(http.StatusBadRequest)

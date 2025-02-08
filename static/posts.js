@@ -67,18 +67,8 @@ async function loadPosts() {
       return;
     }
 
-    const params = new URLSearchParams();
-
-    if (selectedCategory && selectedCategory !== 'all') {
-      params.append('category', selectedCategory);
-    }
-
-    if (selectedOwnership && selectedOwnership !== 'all') {
-      params.append('ownership', selectedOwnership);
-    }
-
-    const response = await fetch(`/show_posts?${params.toString()}`);
-
+    const response = await fetch("/show_posts");
+    
     if (!response.ok) {
       const errorData = await response.json();
       const errorMessage = errorData.error || "Failed to fetch data";
@@ -89,7 +79,8 @@ async function loadPosts() {
 
 
     allPosts = await response.json();
-    
+    // console.log("Posts data:", allPosts);
+
     const allPostsContainer = document.getElementById("allPosts");
 
     if (!allPostsContainer) {
@@ -172,7 +163,7 @@ function createPostElement(postData) {
   postDiv.innerHTML = `
       <div class="post-header"> 
       <img src="./static/profile.png" width="36" height="36" border-radius=18px alt="user-pic">
-      <h4 class="author">${postData.Author}</h4>
+      <h4 class="username">${postData.Username}</h4>
       </div>
       <h2 class="post-title">${postData.Title}</h2>
       <div class="post-categories">
@@ -241,53 +232,3 @@ function createPostElement(postData) {
 
   return postDiv;
 }
-
-document.getElementById("categoryFilter").addEventListener("change", function () {
-  selectedCategory = this.value === "all" ? null : this.value;
-  selectedOwnership = this.value === null;
-  const categoy = document.getElementById("ownershipFilter")
-  categoy.value = "all";
-  postsPerPage = 5;
-  loadPosts();
-});
-
-document.getElementById("ownershipFilter").addEventListener("change", function () {
-  selectedOwnership = this.value === "all" ? null : this.value;
-  selectedCategory = this.value === null;
-  const categoy = document.getElementById("categoryFilter")
-  categoy.value = "all";
-  postsPerPage = 5;
-  loadPosts();
-  // console.log("selectedOwnership", selectedOwnership);
-
-});
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const ownershipFilterContainer = document.getElementById("ownershipFilterContainer");
-
-  fetch("/check-session", {
-    method: "GET",
-    credentials: "same-origin",
-  })
-    .then((response) => {
-      if (response.ok) {
-        return response.json();
-      } else {
-        throw new Error("Failed to check session");
-      }
-    })
-    .then((data) => {
-      if (!data.loggedIn) {
-        ownershipFilterContainer.style.display = "none";
-      } else {
-        ownershipFilterContainer.style.display = "block";
-      }
-    })
-    .catch((error) => {
-      console.error("Error checking session:", error);
-      ownershipFilterContainer.style.display = "none";
-    });
-});
-
-
