@@ -18,7 +18,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var sessionStore = make(map[string]string)
+var SessionStore = make(map[string]string)
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -30,15 +30,26 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := utils.EscapeString(strings.ToLower(r.FormValue("email")))
-	// fmt.Println("Username: ", email)
+	email := utils.EscapeString(strings.ToLower(r.FormValue("user")))
+	// fmt.Println(email)
+	username := utils.EscapeString(strings.ToLower(r.FormValue("user"))) // Add username
+	// fmt.Println(username)
 	password := utils.EscapeString(r.FormValue("password"))
 
 	const maxEmail = 100
+	const maxUsername = 100
 	const maxPassword = 100
 
+	// Validation checks
 	if len(email) > maxEmail {
 		response := map[string]string{"error": fmt.Sprintf("Email cannot be longer than %d characters.", maxEmail)}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if len(username) > maxUsername {
+		response := map[string]string{"error": fmt.Sprintf("Username cannot be longer than %d characters.", maxUsername)}
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(response)
 		return
@@ -51,16 +62,20 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var storedPassword, sessionToken, username string
-	err := database.DB.QueryRow("SELECT password, session_token, username FROM users WHERE email = ?", email).Scan(&storedPassword, &sessionToken, &username)
+	var storedPassword, sessionToken, dbUsername string
+
+	query := "SELECT password, session_token, username FROM users WHERE email = ? OR username = ?"
+	err := database.DB.QueryRow(query, email, username).Scan(&storedPassword, &sessionToken, &dbUsername)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			response := map[string]string{"error": "Invalid email or password"}
+			response := map[string]string{"error": "Invalid email/username or password"}
+			// log.Printf("Received email/username: %s, password: %s", email, username)
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(response)
 		} else {
 			log.Printf("Database error: %v", err)
 			response := map[string]string{"error": "Internal server error"}
+			// log.Printf("Database values - Password: %s, Username: %s", storedPassword, dbUsername)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(response)
 		}
@@ -68,7 +83,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(password)); err != nil {
-		response := map[string]string{"error": "Invalid email or password"}
+		response := map[string]string{"error": "Invalid email/username or password"}
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(response)
 		return
@@ -79,7 +94,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	sessionToken = newSessionToken.String()
 
 	// Update the session token in the database
-	_, err = database.DB.Exec("UPDATE users SET session_token = ? WHERE email = ?", sessionToken, email)
+	_, err = database.DB.Exec("UPDATE users SET session_token = ? WHERE email = ? OR username = ?", sessionToken, email, username)
 	if err != nil {
 		log.Printf("Error updating session token: %v", err)
 		response := map[string]string{"error": "Internal server error"}
@@ -95,7 +110,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Now().Add(1 * time.Hour),
 	})
 
-	response := map[string]string{"message": "Login successful!", "username": username}
+	response := map[string]string{"message": "Login successful!", "username": dbUsername}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
@@ -137,19 +152,19 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if firstName == "" {
-	// 	response["error"] = "First Name is required"
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	json.NewEncoder(w).Encode(response)
-	// 	return
-	// }
+	if firstName == "" {
+		response["error"] = "First Name is required"
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
-	// if lastName == "" {
-	// 	response["error"] = "Last Name is required"
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	json.NewEncoder(w).Encode(response)
-	// 	return
-	// }
+	if lastName == "" {
+		response["error"] = "Last Name is required"
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 
 	errors, valid := ValidateInput(username, firstName, lastName, email, gender, age, password)
 	if !valid {
@@ -173,9 +188,18 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			conflictMessage = "Email already exists"
 		}
 
-		response = map[string]string{"error": conflictMessage, "field": conflictField}
+		// response = map[string]string{"error": conflictMessage, "field": conflictField}
+		// w.WriteHeader(http.StatusConflict)
+		// return
+
+		response = map[string]string{
+			"error": conflictMessage,
+			"field": conflictField,
+		}
 		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(response)
 		return
+
 	} else if err != sql.ErrNoRows {
 		log.Printf("Database error: %v", err)
 		response = map[string]string{"error": "Database error"}
@@ -191,7 +215,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	sessionToken, _ := uuid.NewV4()
 
-	_, err = database.DB.Exec("INSERT INTO users (username, firstname, lastname, email, gender, age, password, session_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", firstName, lastName, username, email, gender, age, hashedPassword, sessionToken)
+	_, err = database.DB.Exec("INSERT INTO users (username, firstname, lastname, email, gender, age, password, session_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", username, firstName, lastName, email, gender, age, hashedPassword, sessionToken)
 	if err != nil {
 		log.Printf("Error inserting user: %v", err)
 		response = map[string]string{"error": "Registration failed"}
@@ -203,26 +227,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
-}
-
-func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session_token")
-	if err != nil {
-		http.Error(w, "You are not logged in", http.StatusBadRequest)
-		return
-	}
-
-	// Remove the session from the session store
-	delete(sessionStore, cookie.Value)
-
-	// Expire the cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:    "session_token",
-		Value:   "guest",
-		Expires: time.Now().Add(-1 * time.Hour),
-	})
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-	fmt.Fprintln(w, "You have been logged out.")
 }
 
 func RequireLogin(w http.ResponseWriter, r *http.Request) (string, string, bool, error) {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"forum/auth"
 	"forum/database"
@@ -18,8 +17,8 @@ func main() {
 	}
 	defer database.DB.Close()
 
-	fileServer := http.FileServer(http.Dir("./static"))
-	http.Handle("/static/", http.StripPrefix("/static", fileServer))
+	// fileServer := http.FileServer(http.Dir("./static"))
+	// http.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	http.HandleFunc("/", handlers.HomePage)
 	http.HandleFunc("/show_posts", handlers.ShowPosts)
@@ -28,10 +27,11 @@ func main() {
 	http.HandleFunc("/interact", handlers.HandleInteract)
 	http.HandleFunc("/get_categories", handlers.GetCategories)
 	http.HandleFunc("/Connections", handlers.Connections)
+	http.HandleFunc("/static/", handlers.HandlePath)
 
 	http.HandleFunc("/login", auth.LoginHandler)
 	http.HandleFunc("/check-session", auth.CheckSessionHandler)
-	http.HandleFunc("/logout", auth.LogoutHandler)
+	http.HandleFunc("/logout", handlers.LogoutHandler)
 	http.HandleFunc("/register", auth.RegisterHandler)
 
 	log.Println("Server started on :4948")
@@ -42,5 +42,6 @@ func main() {
 	}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	time.Sleep(10 * time.Second)
 }
+
+

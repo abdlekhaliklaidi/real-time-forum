@@ -17,6 +17,42 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "You are not logged in", http.StatusBadRequest)
+		return
+	}
+
+	id, _ := GetUserIDFromSessionToken(w, r)
+	if client, ok := clients[id]; ok {
+		m := Message{
+			Type: "reload",
+		}
+		for _, val := range client.conn {
+			val.WriteJSON(m)
+			// if err != nil {
+			// 	log.Println("Error sending message to client", id, ":", err)
+			// }
+		}
+	}
+	delete(auth.SessionStore, cookie.Value)
+
+	// Expire the cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:    "session_token",
+		Value:   "guest",
+		Expires: time.Now().Add(-1 * time.Hour),
+	})
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	fmt.Fprintln(w, "You have been logged out.")
+}
+
 func ShowComments(postID int, w http.ResponseWriter, r *http.Request) ([]models.CommentWithLike, error) {
 	UName, sessionToken, _, err := auth.RequireLogin(w, r)
 	if err != nil {

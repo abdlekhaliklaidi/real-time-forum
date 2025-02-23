@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"strings"
@@ -28,32 +27,36 @@ func HomePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.URL.Path != "/" {
-		w.WriteHeader(http.StatusNotFound)
-		tmpl := `<html>
-                    <head><title>Page Not Found</title></head>
-                    <body>
-                        <h1>404 - Page Not Found</h1>
-                    </body>
-                 </html>`
-		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(tmpl))
-		return
-	}
+	// if r.URL.Path == "/static/" {
+	// 	http.NotFound(w, r)
+	// 	return
+	// }
 
-	tmpl, err := template.ParseFiles("./pages/index.html")
-	if err != nil {
-		log.Printf("Template parsing error: %v", err)
-		http.Error(w, "Error parsing template", http.StatusInternalServerError)
+	if r.URL.Path == "/" {
+		http.ServeFile(w, r, "./pages/index.html")
 		return
-	}
 
-	err = tmpl.Execute(w, nil)
-	if err != nil {
-		log.Printf("Error executing template: %v", err)
-		http.Error(w, "Error rendering posts", http.StatusInternalServerError)
+	}
+	// http.NotFound(w, r)
+	w.WriteHeader(http.StatusNotFound)
+	tmpl := `<html>
+                <head><title>Page Not Found</title></head>
+                <body>
+                    <h1>404 - Page Not Found</h1>
+                    <a href="/">Return to Home</a>
+                </body>
+             </html>`
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(tmpl))
+}
+
+func HandlePath(w http.ResponseWriter, r *http.Request) {
+	static := http.StripPrefix("/static", http.FileServer(http.Dir("./static")))
+	if r.URL.Path == "/static/" {
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
+	static.ServeHTTP(w, r)
 }
 
 func ShowPosts(w http.ResponseWriter, r *http.Request) {

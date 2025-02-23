@@ -16,10 +16,11 @@
 </head>
 
 <body>
+  <!-- <div id="app"> -->
   <section>
     <header class="header">
       <div class="header-content">
-        <a href="#" class="logo">FORUM</a>
+        <a href="#" class="logo">real-time-forum</a>
         <div class="auth-icon">
           <button id="logoutButton" style="display: none">🚪 Logout</button>
           <button id="loginToggle" style="display: inline-block">
@@ -29,12 +30,15 @@
       </div>
     </header>
   </section>
-  <section>
+  <section style="display: flex; height: 100%;">
+    <div class="receiver-container" id="receiverContainer" style="display: none;">
+      <label for="receiverSelect">Choose a recipient:</label>
+      <ul id="receiverSelect"></ul>
+    </div>
     <main class="main-content">
-
       <!-- Login/Registration Popup -->
       <div class="auth-popup" id="authPopup">
-        
+
         <div class="auth-container">
           <button class="close-popup" id="closePopup">&times;</button>
 
@@ -45,16 +49,19 @@
 
           <form id="loginForm" class="auth-form active">
             <div class="form-group">
-              <label for="loginEmail">Email</label>
-              <input type="email" id="loginEmail" name="email" required />
+              <label for="user">Email or Username</label>
+              <input type="text" id="user" name="user" placeholder="Enter your email/user name" required />
             </div>
+
             <div class="form-group">
               <label for="loginPassword">Password</label>
-              <input type="password" id="loginPassword" name="password" required />
+              <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required />
             </div>
+
             <button type="submit">Login</button>
           </form>
           <div id="loginMessage" style="display: none; color: red"></div>
+
           <!-- ****** -->
 
           <!-- ******************************************************** -->
@@ -63,18 +70,18 @@
               <label for="registerUsername">Username</label>
               <input type="text" id="registerUsername" name="username" required />
               <small style="color: red; display: none"></small>
-            </div>
+            </div>"type":        "status-update",
             <div class="form-group">
               <label for="firstName">First Name</label>
               <input type="text" id="firstName" name="firstName" required />
               <small style="color: red; display: none;"></small>
             </div>
-            
+
             <div class="form-group">
               <label for="lastName">Last Name</label>
               <input type="text" id="lastName" name="lastName" required />
               <small style="color: red; display: none;"></small>
-            </div>                 
+            </div>
             <div class="form-group">
               <label for="registerEmail">Email</label>
               <input type="email" id="registerEmail" name="email" required />
@@ -89,7 +96,7 @@
               </select>
               <small id="gender-error" style="color: red; display: none;">Please select a valid gender.</small>
             </div>
-            
+
             <div class="form-group">
               <label for="Age">Age</label>
               <input type="number" id="age" name="age" required min="1" max="120" />
@@ -167,31 +174,38 @@
   <div class="chat-container" id="chatContainer" style="display: none;">
     <div class="chat-header">
       <span class="chat-username">Chat-App</span>
-      <button class="closePopup1" id="closePopup1">&times;</button> 
+      <button class="closePopup1" id="closePopup1">&times;</button>
     </div>
     <div class="chat-body" id="output"></div>
     <div class="chat-footer">
+      <div id="typingStatus" style="display: none;">is typing</div>
       <input type="text" id="input" placeholder="Type a message..." />
       <!-- <button onclick="send()">Send Message</button> -->
       <button id="sendMessageBtn">Send</button>
     </div>
   </div>
 
-  <div class="receiver-container" id="receiverContainer" style="display: none;">
-    <label for="receiverSelect">Choose a recipient:</label>
-    <select id="receiverSelect">
-      <option value="" disabled selected>Choose a recipient:</option>
-    </select>
+  <div id="notifications" style="display: block; margin-top: 20px;">
+    <!-- <p>You have new notifications.</p> -->
   </div>
+
+  <!-- <div class="receiver-container" id="receiverContainer" style="display: none;">
+    <label for="receiverInput">Choose a recipient:</label>
+    <ul id="receiverList"></ul>
+  </div> -->
+
 
   <!-- <div class="headere">
     <div> Hello, please Login. </div>
-   
+    
   </div> -->
+
+  <!-- <input type="text" id="input" placeholder="Type a message..." /> -->
+
 
   <div id="chatContainer"></div>
 
- <!-- <div id="chatUsername"></div> -->
+  <!-- <div id="chatUsername"></div> -->
   <!-- <div class="content">
     <input type="text" id="input">
     <button onclick="send()">send Message</button>
@@ -199,25 +213,60 @@
 
   <!--PRINT YOU MESSAGE-->
   <pre id="output"></pre>
+  </div>
 
   <!-- footer -->
-  <!-- <footer class="footer">
+  <footer class="footer">
     <div class="footer-bottom">
-      <p>&copy; 2025 FORUM. All rights reserved.</p>
+      <p>&copy; 2025 real-time-forum. All rights reserved.</p>
     </div>
-  </footer> -->
+  </footer>
   <!-- footer -->
+  <div id="error" style="display: none;">
+    <h1>404 Error: Page Not Found</h1>
+    <p>Sorry, the page you're looking for doesn't exist.</p>
+    <form action="" class="returnHome" method="post">
+      <button class="button">Home</button>
+    </form>
 
-  <script src="/static/guest.js"></script>
-  <script src="/static/auth.js"></script>
-  <script src="/static/comments.js"></script>
-  <script src="/static/interactions.js"></script>
-  <script src="/static/posts.js"></script>
-  <script src="/static/message.js"></script>
+    <!-- </div> -->
+    <!-- <div id="notifications"></div>
+  <div id="app"></div> -->
+
+    <script src="/static/guest.js"></script>
+    <script src="/static/auth.js"></script>
+    <script src="/static/comments.js"></script>
+    <script src="/static/interactions.js"></script>
+    <script src="/static/posts.js"></script>
+    <script src="/static/message.js"></script>
 </body>
 
+<!-- <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const errorDiv = document.getElementById("error");
+    const appDiv = document.getElementById("app");
+    const returnhome = document.querySelector(".returnHome");
+    const notificationsDiv = document.getElementById("notifications");
+    if (window.location.pathname !== "/") {
+      errorDiv.style.display = "flex";
+      appDiv.style.display = "none";
+      notificationsDiv.style.display = "none";
+    }
+    if (returnhome) {
+      returnhome.addEventListener("submit", (e) => {
+        e.preventDefault()
+        window.history.pushState({}, "", "/");
+        errorDiv.style.display = "none";
+        appDiv.style.display = "block";
+        notificationsDiv.style.display = "flex";
+      })
+    }
+
+  })
+</script> -->
+
 <script>
-  const isLoggedInn = localStorage.getItem('isLoggedIn');  
+  const isLoggedInn = localStorage.getItem('isLoggedIn');
 
   if (isLoggedInn) {
     document.getElementById('receiverContainer').style.display = 'block';
@@ -225,5 +274,17 @@
     document.getElementById('receiverContainer').style.display = 'none';
   }
 </script>
+
+<!-- <script>
+  window.onload = function () {
+    const currentPath = window.location.pathname;
+
+    if (currentPath.includes('/static/')) {
+      alert('You are not allowed to access this page. Redirecting to homepage.');
+      window.location.href = '/';
+    }
+  };
+
+</script> -->
 
 </html>
